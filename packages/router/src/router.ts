@@ -3,6 +3,7 @@ import type {
   Lazy,
   RouteLocationOptions,
   MatcherLocationRaw,
+  RouteParamsGeneric,
 } from './types'
 import { isRouteLocation, isRouteName } from './types'
 import type {
@@ -34,7 +35,7 @@ import type {
 import { createRouterError, ErrorTypes, isNavigationFailure } from './errors'
 import { applyToParams, isBrowser, assign, noop, isArray } from './utils'
 import { useCallbacks } from './utils/callbacks'
-import { encodeParam, decode, encodeHash } from './encoding'
+import { decode, encodeHash } from './encoding'
 import type { LocationQuery } from './query'
 import {
   normalizeQuery,
@@ -176,7 +177,6 @@ export function createRouter(options: RouterOptions): Router {
     null,
     paramValue => '' + paramValue
   )
-  const encodeParams = applyToParams.bind(null, encodeParam)
   const decodeParams: (params: RouteParams | undefined) => RouteParams =
     // @ts-expect-error: intentionally avoid the type check
     applyToParams.bind(null, decode)
@@ -313,16 +313,14 @@ export function createRouter(options: RouterOptions): Router {
           delete targetParams[key]
         }
       }
-      // pass encoded values to the matcher, so it can produce encoded path and fullPath
+
+      // matcher handles param encoding by itself, just pass cleaned params
       matcherLocation = assign({}, rawLocation, {
-        params: encodeParams(targetParams),
+        params: targetParams as RouteParamsGeneric,
       })
-      // current location params are decoded, we need to encode them in case the
-      // matcher merges the params
-      currentLocation.params = encodeParams(currentLocation.params)
     }
 
-    const matchedRoute = matcher.resolve(matcherLocation, currentLocation)
+    const matchedRoute = matcher.resolve(matcherLocation, currentLocation, true)
     const hash = rawLocation.hash || ''
 
     if (__DEV__ && hash && !hash.startsWith('#')) {

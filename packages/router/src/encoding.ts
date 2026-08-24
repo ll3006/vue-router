@@ -124,6 +124,20 @@ export function encodePath(text: string | number | null | undefined): string {
 
 /**
  * Encode characters that need to be encoded on the path section of the URL as a
+ * path param. This function does exactly what {@link encodePath} does, but if `text` is `null` or `undefined`, returns an empty
+ * string instead.
+ *
+ * @param text - string to encode
+ * @returns encoded string
+ */
+export function encodePathParam(
+  text: string | number | null | undefined
+): string {
+  return text == null ? '' : encodePath(text)
+}
+
+/**
+ * Encode characters that need to be encoded on the path section of the URL as a
  * param. This function encodes everything {@link encodePath} does plus the
  * slash (`/`) character. If `text` is `null` or `undefined`, returns an empty
  * string instead.
@@ -132,7 +146,7 @@ export function encodePath(text: string | number | null | undefined): string {
  * @returns encoded string
  */
 export function encodeParam(text: string | number | null | undefined): string {
-  return encodePath(text).replace(SLASH_RE, '%2F')
+  return encodePathParam(text).replace(SLASH_RE, '%2F')
 }
 
 /**
