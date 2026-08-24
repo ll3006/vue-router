@@ -447,6 +447,54 @@ describe('Router', () => {
     expect(() => router.resolve({ name: 'r2', params: {} })).not.toThrow()
   })
 
+  it('escapes slashes in standard params', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/home/:path', component: components.Home }],
+    })
+    await router.push('/home/pathparam')
+    await router.replace({ params: { path: 'test/this/is/escaped' } })
+    expect(router.currentRoute.value).toMatchObject({
+      fullPath: '/home/test%2Fthis%2Fis%2Fescaped',
+    })
+  })
+
+  it('keeps slashes in star params', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/home/:path(.*)', component: components.Home }],
+    })
+    await router.push('/home/pathparam')
+    await router.replace({ params: { path: 'test/this/is/not/escaped' } })
+    expect(router.currentRoute.value).toMatchObject({
+      fullPath: '/home/test/this/is/not/escaped',
+    })
+    await router.replace({ hash: '#test' })
+    expect(router.currentRoute.value).toMatchObject({
+      fullPath: '/home/test/this/is/not/escaped#test',
+    })
+  })
+
+  it('keeps slashes in params containing slashes', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: '/home/:slug(.*)*/:path(test/deep/about\\.html(?!.*\\/\\).*)',
+          component: components.Foo,
+        },
+      ],
+    })
+    await router.push('/home/slug/test/deep/about.html')
+    await router.replace({
+      params: { slug: 'another/slug' },
+    })
+    await router.replace({ hash: '#hash' })
+    expect(router.currentRoute.value).toMatchObject({
+      fullPath: '/home/another/slug/test/deep/about.html#hash',
+    })
+  })
+
   it('can redirect to a star route when encoding the param', () => {
     const history = createMemoryHistory()
     const router = createRouter({
@@ -455,7 +503,7 @@ describe('Router', () => {
         { name: 'notfound', path: '/:path(.*)+', component: components.Home },
       ],
     })
-    let path = 'not/found%2Fha'
+    let path = 'not/found/ha'
     let href = '/' + path
     expect(router.resolve(href)).toMatchObject({
       name: 'notfound',
